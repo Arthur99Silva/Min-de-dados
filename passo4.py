@@ -5,31 +5,28 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
-# Carregar o conjunto de dados
 spotify_data = pd.read_csv("spotify-2023.csv", encoding='ISO-8859-1')
 
-# Convertendo a coluna 'streams' para numérico caso ainda não esteja no formato correto
+# Convertendo a coluna 'streams' para numérico
 spotify_data['streams'] = pd.to_numeric(spotify_data['streams'].str.replace(',', ''), errors='coerce')
 
-# 1. Seleção de Variáveis Relevantes para o Clustering
+# Seleção de variáveis para o clustering
 features = ['danceability_%', 'energy_%', 'valence_%', 'acousticness_%', 
             'instrumentalness_%', 'liveness_%', 'speechiness_%']
 
 X = spotify_data[features]
 
-# 2. Normalização dos Dados
+# Normalização dos Dados
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-# 3. Aplicando o Algoritmo K-means
-# Escolhendo 4 clusters como exemplo
+# Algoritmo K-means
 kmeans = KMeans(n_clusters=4, random_state=42)
 kmeans.fit(X_scaled)
 
-# Adicionando o rótulo dos clusters ao DataFrame original
 spotify_data['cluster'] = kmeans.labels_
 
-# 4. Visualização dos Grupos (Usando PCA para reduzir a dimensionalidade a 2D para visualização)
+# PCA para deixar em 2D
 pca = PCA(n_components=2)
 X_pca = pca.fit_transform(X_scaled)
 
@@ -41,7 +38,6 @@ plt.ylabel('Componente Principal 2')
 plt.legend(title='Cluster')
 plt.show()
 
-# 5. Análise das Características de Cada Cluster
 cluster_summary = spotify_data.groupby('cluster')[features].mean()
 print("\nResumo das Características por Cluster:")
 print(cluster_summary)

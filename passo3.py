@@ -2,22 +2,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Configurando o estilo dos gráficos
 sns.set(style="whitegrid")
 
-# Carregar o conjunto de dados
 spotify_data = pd.read_csv("spotify-2023.csv", encoding='ISO-8859-1')
 
-# Convertendo a coluna 'streams' para numérico caso ainda não esteja no formato correto
+# Convertendo a coluna 'streams' para numérico
 spotify_data['streams'] = pd.to_numeric(spotify_data['streams'].str.replace(',', ''), errors='coerce')
 
-# 1. Estatísticas Descritivas
 print("Estatísticas Descritivas das Variáveis Numéricas:")
 print(spotify_data.describe())
 
-# 2. Visualização de Distribuições
-
-# Criando gráficos de distribuição para algumas variáveis importantes
 fig, axs = plt.subplots(3, 1, figsize=(10, 15))
 
 # Distribuição de danceability_%
@@ -41,9 +35,8 @@ axs[2].set_ylabel('Frequência')
 plt.tight_layout()
 plt.show()
 
-# 3. Análise de Variáveis Categóricas
 
-# Analisando a distribuição de 'mode' (Major/Minor)
+# Distribuição de 'mode' (Major/Minor)
 plt.figure(figsize=(8, 6))
 sns.countplot(data=spotify_data, x='mode')
 plt.title('Distribuição dos Modos (Major/Minor)')
@@ -51,7 +44,7 @@ plt.xlabel('Mode')
 plt.ylabel('Contagem')
 plt.show()
 
-# Analisando a distribuição de 'key'
+# Distribuição de 'key'
 plt.figure(figsize=(12, 6))
 sns.countplot(data=spotify_data, x='key', order=spotify_data['key'].value_counts().index)
 plt.title('Distribuição das Chaves (Keys)')
