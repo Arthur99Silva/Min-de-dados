@@ -1,0 +1,17 @@
+Padrões pra aprender:
+
+Temperatura:
+
+Se a temperatura sobe acima de 35°C, o rendimento cai (por estresse térmico).
+Se a temperatura estiver entre 20°C e 30°C, o rendimento pode aumentar.
+
+Precipitação:
+
+Se a chuva for muito baixa (<50mm/mês), o rendimento cai (seca).
+Se a chuva for excessiva (>200mm/mês), o rendimento pode cair (alagamento e doenças nas plantas).
+Se a precipitação estiver entre 80mm e 150mm, o rendimento pode ser otimizado.
+
+Umidade do Ar:
+
+Se a umidade relativa estiver muito baixa (<30%), a planta perde água rapidamente e o rendimento cai.
+Se a umidade estiver entre 50% e 70%, o rendimento tende a ser maior.
