@@ -13,7 +13,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 matplotlib.use('Agg')
 
 # Carregar os dados
-file_path = "C:/Users/Arthur/Documents/Documentos/UFSJ/Min de dados/BasesTP_Sul-main/BasesTP_Sul-main/Dataset_Filtrado.csv"
+file_path = "C:/Users/Arthur/Documents/Documentos/UFSJ/Min de dados/BasesTP_Sul-main/BasesTP_Sul-main/Completo.csv"
 df = pd.read_csv(file_path)
 
 # Remover colunas irrelevantes e valores NaN

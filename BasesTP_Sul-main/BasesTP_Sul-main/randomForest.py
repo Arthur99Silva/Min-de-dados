@@ -11,7 +11,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 # Configuração para evitar erro do Matplotlib em alguns ambientes
 matplotlib.use('Agg')
 
-file_path = "C:/Users/Arthur/Documents/Documentos/UFSJ/Min de dados/BasesTP_Sul-main/BasesTP_Sul-main/Dataset_Sul_Numerico.csv"
+file_path = "C:/Users/Arthur/Documents/Documentos/UFSJ/Min de dados/BasesTP_Sul-main/BasesTP_Sul-main/Dataset.csv"
 df = pd.read_csv(file_path)
 
 # Remover colunas irrelevantes e valores NaN
