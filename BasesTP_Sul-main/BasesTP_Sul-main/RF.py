@@ -2,9 +2,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.feature_selection import SelectFromModel
 import matplotlib
 matplotlib.use('Agg')
 
@@ -41,51 +42,64 @@ merged_df = merged_df.dropna()
 X = merged_df[['Produto', 'Estado', 'Rendimento Médio (kg/ha)', 
                'TemperaturaMedia', 'PrecipitacaoMensal', 'PressaoAtmosferica', 'VelocidadeVento']]
 
+
 y = merged_df['Área Colhida (ha)']
 
 # Dividir os dados em treino e teste
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Criar e treinar um modelo Gradient Boosting com ajuste de hiperparâmetros
-gb_model = GradientBoostingRegressor(n_estimators=500, learning_rate=0.05, max_depth=5, random_state=42)
-gb_model.fit(X_train, y_train)
+# Criar um modelo Random Forest para seleção de features
+feature_selector = RandomForestRegressor(n_estimators=100, random_state=42)
+feature_selector.fit(X_train, y_train)
+
+# Criar o seletor de features com base na importância das variáveis
+selector = SelectFromModel(feature_selector, threshold="median", prefit=True)
+
+# Transformar os dados para incluir apenas as melhores features
+X_train_selected = selector.transform(X_train)
+X_test_selected = selector.transform(X_test)
+
+# Criar e treinar um novo modelo com as features selecionadas
+model_selected = RandomForestRegressor(n_estimators=100, random_state=42)
+model_selected.fit(X_train_selected, y_train)
 
 # Fazer previsões
-y_pred_gb = gb_model.predict(X_test)
+y_pred_selected = model_selected.predict(X_test_selected)
 
-# Avaliação do modelo Gradient Boosting
-mae_gb = mean_absolute_error(y_test, y_pred_gb)
-mse_gb = mean_squared_error(y_test, y_pred_gb)
-rmse_gb = np.sqrt(mse_gb)
-r2_gb = r2_score(y_test, y_pred_gb)
+# Avaliação do modelo com feature selection
+mae_selected = mean_absolute_error(y_test, y_pred_selected)
+mse_selected = mean_squared_error(y_test, y_pred_selected)
+rmse_selected = np.sqrt(mse_selected)
+r2_selected = r2_score(y_test, y_pred_selected)
 
-# Impressão dos resultados
-print("Gradient Boosting (Ajustado):")
-print(f"MAE: {mae_gb}, MSE: {mse_gb}, RMSE: {rmse_gb}, R²: {r2_gb}")
+print(f"Erro Médio Absoluto (MAE): {mae_selected}")
+print(f"Erro Quadrático Médio (MSE): {mse_selected}")
+print(f"Raiz do Erro Quadrático Médio (RMSE): {rmse_selected}")
+print(f"Coeficiente de Determinação (R²): {r2_selected}")
 
 # Criar gráficos para visualização dos resultados
 plt.figure(figsize=(10, 5))
-sns.scatterplot(x=y_test, y=y_pred_gb)
+sns.scatterplot(x=y_test, y=y_pred_selected)
 plt.xlabel("Valores Reais")
 plt.ylabel("Previsões")
-plt.title("Valores Reais vs Previsões (Gradient Boosting)")
-plt.savefig("scatterplot_gb.png")  # Salvar gráfico em arquivo
+plt.title("Valores Reais vs Previsões")
+plt.savefig("scatterplot.png")  # Salvar gráfico em arquivo
 
 # Gráfico de erros
-errors = y_test - y_pred_gb
+errors = y_test - y_pred_selected
 plt.figure(figsize=(10, 5))
 sns.histplot(errors, bins=30, kde=True)
 plt.xlabel("Erro")
 plt.ylabel("Frequência")
-plt.title("Distribuição dos Erros (Gradient Boosting)")
-plt.savefig("erro_histograma_gb.png")
+plt.title("Distribuição dos Erros")
+plt.savefig("erro_histograma.png")
 
 # Importância das Features
-importances = gb_model.feature_importances_
+importances = feature_selector.feature_importances_
 feature_names = X.columns
 plt.figure(figsize=(12, 6))
 sns.barplot(x=importances, y=feature_names)
 plt.xlabel("Importância")
 plt.ylabel("Variáveis")
-plt.title("Importância das Features no Modelo (Gradient Boosting)")
-plt.savefig("importancia_features_gb.png")
+plt.title("Importância das Features no Modelo")
+plt.savefig("importancia_features.png")

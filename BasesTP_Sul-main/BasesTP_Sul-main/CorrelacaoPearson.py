@@ -3,8 +3,8 @@ from scipy.stats import pearsonr
 import numpy as np
 
 # Carregar os datasets
-file_path_agriculture = "C:/Users/Arthur/Documents/Documentos/UFSJ/Min de dados/BasesTP_Sul-main/BasesTP_Sul-main/Dataset_2016_2024.csv"
-file_path_climate = "C:/Users/Arthur/Documents/Documentos/UFSJ/Min de dados/BasesTP_Sul-main/BasesTP_Sul-main/ClimaKNN_Filtrado.csv.csv"
+file_path_agriculture = "C:/Users/Arthur/Documents/Documentos/UFSJ/Min de dados/BasesTP_Sul-main/BasesTP_Sul-main/Numerico_Prime.csv"
+file_path_climate = "C:/Users/Arthur/Documents/Documentos/UFSJ/Min de dados/BasesTP_Sul-main/BasesTP_Sul-main/TEORIADOCARDS_Atualizado.csv"
 
 df_agriculture = pd.read_csv(file_path_agriculture)
 df_climate = pd.read_csv(file_path_climate)

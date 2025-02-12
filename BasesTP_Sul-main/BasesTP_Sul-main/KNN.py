@@ -1,46 +1,29 @@
 import pandas as pd
+from sklearn.impute import KNNImputer
 import numpy as np
 
-# Carregar a tabela fornecida
-file_path = "C:/Users/Arthur/Documents/Documentos/UFSJ/Min de dados/BasesTP_Sul-main/BasesTP_Sul-main/New_TempSul.csv"
-df = pd.read_csv(file_path)
+# Carregar o arquivo
+df = pd.read_csv("C:/Users/Arthur/Documents/Documentos/UFSJ/Min de dados/BasesTP_Sul-main/BasesTP_Sul-main/Temp_Estados.csv")
 
-# Converter colunas numéricas que estão como string com vírgulas para ponto
-cols_to_convert = [
-    "PRECIPITACAO TOTAL, MENSAL (AUT)(mm)",
-    "PRESSAO ATMOSFERICA, MEDIA MENSAL (AUT)(mB)",
-    "VENTO, VELOCIDADE MEDIA MENSAL (AUT)(m/s)"
-]
+# Verificar quantos valores NaN existem no dataset antes da imputação
+print("Valores NaN antes da imputação:")
+print(df.isna().sum())
 
-for col in cols_to_convert:
-    df[col] = df[col].astype(str).str.replace(',', '.').astype(float)
+# Aplicar KNN Imputer para preencher os valores NaN, considerando os vizinhos mais próximos
+knn_imputer = KNNImputer(n_neighbors=5, weights='distance')  # Pesos baseados na distância
 
-# Identificar colunas numéricas para tratamento de NaN e outliers
-numeric_cols = ["TemperaturaMedia C"] + cols_to_convert
+# Selecionar apenas colunas numéricas para imputação
+numerical_cols = ['Temperatura Media', 'Precipitacao Total', 'Pressao Atmosferica Media', 'Vento Velocidade Media']
+df[numerical_cols] = knn_imputer.fit_transform(df[numerical_cols])
 
-# Preencher valores ausentes com estratégias apropriadas
-df["TemperaturaMedia C"].fillna(df["TemperaturaMedia C"].median(), inplace=True)
-df["PRESSAO ATMOSFERICA, MEDIA MENSAL (AUT)(mB)"].fillna(df["PRESSAO ATMOSFERICA, MEDIA MENSAL (AUT)(mB)"].median(), inplace=True)
-df["PRECIPITACAO TOTAL, MENSAL (AUT)(mm)"].fillna(df["PRECIPITACAO TOTAL, MENSAL (AUT)(mm)"].mean(), inplace=True)
-df["VENTO, VELOCIDADE MEDIA MENSAL (AUT)(m/s)"].fillna(df["VENTO, VELOCIDADE MEDIA MENSAL (AUT)(m/s)"].mean(), inplace=True)
+# Arredondar os valores para uma casa decimal
+df[numerical_cols] = df[numerical_cols].round(1)
+# Adicionar um '0' no início das datas que começam com os padrões especificados
+df['Data'] = df['Data'].astype(str).apply(lambda x: '0' + x if x[:3] in ['120', '220', '320', '420', '520', '620', '720', '820', '920'] else x)
 
-# Função para substituir outliers pelo limite máximo/mínimo usando IQR
-def replace_outliers(df, columns):
-    for col in columns:
-        Q1 = df[col].quantile(0.25)
-        Q3 = df[col].quantile(0.75)
-        IQR = Q3 - Q1
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
-        df[col] = np.where(df[col] < lower_bound, lower_bound, df[col])
-        df[col] = np.where(df[col] > upper_bound, upper_bound, df[col])
-    return df
+# Verificar se ainda existem valores NaN após a imputação
+print("Valores NaN após a imputação:")
+print(df.isna().sum())
 
-# Aplicar substituição de outliers usando IQR
-df_cleaned = replace_outliers(df, numeric_cols)
-
-# Salvar o CSV tratado
-output_path = "C:/Users/Arthur/Documents/Documentos/UFSJ/Min de dados/BasesTP_Sul-main/BasesTP_Sul-main/ClimaKNN.csv"
-df_cleaned.to_csv(output_path, index=False)
-
-print(f"Arquivo tratado salvo em: {output_path}")
+# Salvar o arquivo atualizado
+df.to_csv("C:/Users/Arthur/Documents/Documentos/UFSJ/Min de dados/BasesTP_Sul-main/BasesTP_Sul-main/Temp_KNN_Estados.csv", index=False)
