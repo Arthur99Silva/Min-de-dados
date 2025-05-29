@@ -9,7 +9,7 @@ import seaborn as sns
 
 # 1. Carregamento dos Dados
 try:
-    df = pd.read_csv('IA2/archive/world_happiness_processed.csv')
+    df = pd.read_csv('world_happiness_processed.csv')
     print("Dados carregados com sucesso!")
 except FileNotFoundError:
     print("Erro: Arquivo 'world_happiness_processed.csv' não encontrado.")
@@ -18,7 +18,7 @@ except FileNotFoundError:
 
 # 2. Seleção da Variável Alvo (Target) e Variáveis Explicativas (Features)
 target_variable = 'Happiness Score'
-region_columns = [col for col in df.columns if 'Region_' in col]
+
 numerical_features = [
     'GDP per capita',
     'Social support',
@@ -27,8 +27,7 @@ numerical_features = [
     'Generosity',
     'Perceptions of corruption'
 ]
-features_columns = numerical_features + region_columns
-
+features_columns = numerical_features
 missing_cols = [col for col in features_columns if col not in df.columns]
 if missing_cols:
     print(f"Erro: As seguintes colunas de features não foram encontradas no DataFrame: {missing_cols}")
@@ -51,10 +50,7 @@ print(f"Formato de X_test: {X_test.shape}")
 print(f"Formato de y_train: {y_train.shape}")
 print(f"Formato de y_test: {y_test.shape}")
 
-# 4. Normalização/Padronização das Features
-# Reutilizando a padronização para consistência com o modelo de Regressão Linear.
-# Random Forest é geralmente robusto à escala das features, mas usar os mesmos dados
-# de entrada facilita a comparação direta dos modelos.
+
 scaler = StandardScaler()
 X_train_numerical_scaled = scaler.fit_transform(X_train[numerical_features])
 X_test_numerical_scaled = scaler.transform(X_test[numerical_features])
@@ -62,8 +58,8 @@ X_test_numerical_scaled = scaler.transform(X_test[numerical_features])
 X_train_numerical_scaled_df = pd.DataFrame(X_train_numerical_scaled, columns=numerical_features, index=X_train.index)
 X_test_numerical_scaled_df = pd.DataFrame(X_test_numerical_scaled, columns=numerical_features, index=X_test.index)
 
-X_train_scaled = pd.concat([X_train_numerical_scaled_df, X_train[region_columns]], axis=1)
-X_test_scaled = pd.concat([X_test_numerical_scaled_df, X_test[region_columns]], axis=1)
+X_train_scaled = pd.concat([X_train_numerical_scaled_df, X_train[numerical_features]], axis=1) #Alterado
+X_test_scaled = pd.concat([X_test_numerical_scaled_df, X_test[numerical_features]], axis=1) #Alterado
 
 print("\nFeatures numéricas padronizadas (para consistência).")
 # print("Primeiras linhas de X_train_scaled:")
@@ -117,15 +113,6 @@ sns.barplot(x=forest_importances.values, y=forest_importances.index, palette="vi
 plt.title('Importância das Features - Random Forest Regressor')
 plt.xlabel('Importância Relativa')
 plt.ylabel('Features')
-plt.tight_layout() # Ajusta o layout para evitar sobreposição
-# Para exibir o gráfico em ambientes que não o fazem automaticamente (como scripts .py):
-# plt.show()
-# Em notebooks Jupyter, o gráfico geralmente aparece inline.
-# Se estiver a usar um IDE, pode precisar de plt.show() ou configurar o backend gráfico.
+plt.tight_layout()
 print("\nGráfico de importância das features gerado (pode precisar de plt.show() para exibir).")
 plt.savefig("grafico.png")
-# Exemplo de como você poderia apresentar os resultados no seu relatório:
-# "O modelo Random Forest Regressor alcançou um RMSE de [valor_rmse_rf] e um R² de [valor_r2_rf].
-# Comparado à Regressão Linear, o Random Forest apresentou [melhor/pior/semelhante] desempenho.
-# As features mais importantes identificadas pelo modelo foram [listar as top features]."
-

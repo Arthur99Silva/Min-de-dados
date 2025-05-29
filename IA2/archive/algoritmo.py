@@ -7,7 +7,7 @@ import numpy as np
 
 # 1. Carregamento dos Dados
 try:
-    df = pd.read_csv('IA2/archive/world_happiness_processed.csv')
+    df = pd.read_csv('world_happiness_processed.csv')
     print("Dados carregados com sucesso!")
 except FileNotFoundError:
     print("Erro: Arquivo 'world_happiness_processed.csv' não encontrado.")
