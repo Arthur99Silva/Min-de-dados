@@ -1,16 +1,16 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
-import xgboost as xgb 
+from sklearn.model_selection import train_test_split, GridSearchCV # GridSearchCV adicionado
+import xgboost as xgb
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
 import joblib
 import numpy as np
 
-#  Carregar dados
-FILE_PATH = "IA2/archive/world_happiness_processed.csv" 
-MODEL_FILENAME = "xgb_happiness_model.joblib"
-SCALER_FILENAME = "xgb_happiness_scaler.joblib"
-FEATURES_LIST_FILENAME = "xgb_happiness_features.joblib"
+# --- 1. Configurações e Carregamento dos Dados ---
+FILE_PATH = "/home/arthurantunes/Min-de-dados/IA2/archive/world_happiness_processed.csv" # ATUALIZADO para o novo arquivo
+MODEL_FILENAME = "xgb_happiness_model_gscv.joblib" # Nome do modelo atualizado
+SCALER_FILENAME = "xgb_happiness_scaler_gscv.joblib"
+FEATURES_LIST_FILENAME = "xgb_happiness_features_gscv.joblib"
 
 TARGET_VARIABLE = 'Happiness Score'
 
@@ -24,7 +24,16 @@ except Exception as e:
     print(f"Ocorreu um erro ao carregar o arquivo: {e}")
     exit()
 
-# Prepara o dataset
+# --- 2. Preparação dos Dados ---
+# Tentar identificar coluna de ano para possível exclusão das features se não for desejada
+year_column_candidates = ['Year', 'year', 'Time', 'time', 'Anos', 'ano']
+actual_year_column = None
+for col_candidate in year_column_candidates:
+    if col_candidate in df.columns:
+        actual_year_column = col_candidate
+        print(f"Coluna de ano encontrada: '{actual_year_column}'")
+        break
+
 region_columns = [col for col in df.columns if 'Region_' in col]
 numerical_features = [
     'GDP per capita',
@@ -32,9 +41,23 @@ numerical_features = [
     'Healthy life expectancy',
     'Freedom',
     'Generosity',
-    'Perceptions of corruption'
+    'Perceptions of corruption',
+    # Adicionando Dystopia Residual se existir no novo dataset e for relevante
+    'Dystopia Residual' if 'Dystopia Residual' in df.columns else None
 ]
+numerical_features = [feat for feat in numerical_features if feat is not None] # Remover None se Dystopia não existir
+
 features_columns = numerical_features + region_columns
+# Remover explicitamente a coluna de ano das features se ela existir e não for desejada como feature
+if actual_year_column and actual_year_column in features_columns:
+    print(f"Removendo '{actual_year_column}' das features.")
+    features_columns.remove(actual_year_column)
+# Remover também 'Country name' ou similar das features, caso tenha sido incluída por engano
+country_name_cols = ['Country name', 'Country or region', 'Country']
+for cn_col in country_name_cols:
+    if cn_col in features_columns:
+        features_columns.remove(cn_col)
+
 
 missing_feature_cols = [col for col in features_columns if col not in df.columns]
 if missing_feature_cols:
@@ -51,45 +74,69 @@ if df_processed.empty:
 
 X = df_processed[features_columns]
 y = df_processed[TARGET_VARIABLE]
+print(f"Features usadas para o treinamento: {X.columns.tolist()}")
 
-# Treino e Teste ---
+# --- 3. Divisão dos Dados em Treino e Teste ---
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 print(f"Dados divididos: {len(X_train)} para treino, {len(X_test)} para teste.")
 
-# escalonamento das Features 
+# --- 4. Escalonamento das Features ---
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 print("Features escalonadas.")
 
-# XGBoost Regressor
-xgb_model = xgb.XGBRegressor(
-    objective='reg:squarederror', 
-    n_estimators=100,            
-    learning_rate=0.1,           
-    max_depth=5,
-    subsample=0.8,
-    colsample_bytree=0.8,
+# --- 5. Configuração e Treinamento do Modelo XGBoost com GridSearchCV ---
+print("\nIniciando GridSearchCV para XGBoost...")
+xgb_estimator = xgb.XGBRegressor(
+    objective='reg:squarederror',
     random_state=42,
     n_jobs=-1
 )
 
-xgb_model.fit(X_train_scaled, y_train)
-print("Modelo XGBoost treinado.")
+# Grade de hiperparâmetros (pode ser expandida, mas mantenha razoável para tempo de execução)
+param_grid = {
+    'n_estimators': [100, 200],       # Número de árvores
+    'max_depth': [3, 5, 7],           # Profundidade máxima
+    'learning_rate': [0.05, 0.1],    # Taxa de aprendizado
+    'subsample': [0.8, 0.9],          # Fração de amostras para cada árvore
+    'colsample_bytree': [0.8, 0.9]    # Fração de features para cada árvore
+}
 
-# Avalia o modelo treinado
-y_pred_test = xgb_model.predict(X_test_scaled)
+# Configurar GridSearchCV
+# cv=3 significa validação cruzada de 3 folds.
+# scoring='r2' (ou 'neg_mean_squared_error', etc.)
+grid_search = GridSearchCV(
+    estimator=xgb_estimator,
+    param_grid=param_grid,
+    cv=3,
+    scoring='r2',
+    verbose=1, # Mostra o progresso
+    n_jobs=-1  # Usa todos os processadores disponíveis
+)
+
+grid_search.fit(X_train_scaled, y_train)
+
+print("\nGridSearchCV concluído.")
+print(f"Melhores hiperparâmetros encontrados: {grid_search.best_params_}")
+print(f"Melhor pontuação R² na validação cruzada: {grid_search.best_score_:.4f}")
+
+# Usar o melhor estimador encontrado pelo GridSearchCV
+best_xgb_model = grid_search.best_estimator_
+
+# --- 6. Avaliação do Melhor Modelo ---
+y_pred_test = best_xgb_model.predict(X_test_scaled)
 rmse_test = np.sqrt(mean_squared_error(y_test, y_pred_test))
 r2_test = r2_score(y_test, y_pred_test)
-print(f"\n--- Desempenho do XGBoost no Conjunto de Teste ---")
+print(f"\n--- Desempenho do Melhor XGBoost no Conjunto de Teste ---")
 print(f"RMSE: {rmse_test:.4f}")
 print(f"R²: {r2_test:.4f}")
 
-# Salvar
-joblib.dump(xgb_model, MODEL_FILENAME)
+# --- 7. Salvar o Melhor Modelo, o Scaler e a Lista de Features ---
+joblib.dump(best_xgb_model, MODEL_FILENAME)
 joblib.dump(scaler, SCALER_FILENAME)
-joblib.dump(features_columns, FEATURES_LIST_FILENAME)
-print(f"\nModelo XGBoost salvo como '{MODEL_FILENAME}'")
+joblib.dump(features_columns, FEATURES_LIST_FILENAME) # Salva a lista de nomes de colunas de features
+print(f"\nMelhor modelo XGBoost salvo como '{MODEL_FILENAME}'")
 print(f"Scaler salvo como '{SCALER_FILENAME}'")
 print(f"Lista de features salva como '{FEATURES_LIST_FILENAME}'")
-print("\nTreinamento XGBoost concluído!")
+print("\nTreinamento XGBoost com GridSearchCV concluído!")
